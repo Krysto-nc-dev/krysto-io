@@ -4,18 +4,24 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
 import connectDB from "./config/db.js";
-
+import morgan from "morgan";
+import colors from "colors";
+import errorHandler from "./middlewares/error.js";
 // Routes files
 import organisationRoutes from "./routes/organisationRoutes.js";
 
 dotenv.config({ path: "./.env" });
 
 const app = express();
+// Middleware pour parsing des requêtes
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 const isProduction = process.env.NODE_ENV === "production";
 const port = process.env.PORT || 4000;
 
 console.log(
   `L'application est en mode ${isProduction ? "Production" : "Développement"}`
+    .yellow
 );
 
 // Récupère le chemin du répertoire actuel
@@ -64,13 +70,22 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../doc", "api-doc.html"));
 });
 
+// Middleware pour log les requêtes en mode développement
+if (process.env.NODE_ENV == "development") {
+  app.use(morgan("dev"));
+}
+
 app.use("/v1/organisations", organisationRoutes);
+
+
+// Middleware pour gérer les erreurs
+app.use(errorHandler);
 
 // Lancement du serveur
 app.listen(port, () => {
   console.log(
     `Serveur en cours d'exécution sur le port ${port} en mode ${
-      isProduction ? "Production" : "Développement"
-    }`
+      isProduction ? `Production`.red : `Développement`.cyan
+    }`.green.bold
   );
 });
